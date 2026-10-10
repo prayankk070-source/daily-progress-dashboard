@@ -1,0 +1,2432 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <title>Daily Site Progress Tracker – OPD / EMR</title>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        box-sizing: border-box;
+        padding-top: env(safe-area-inset-top, 0px);
+        padding-bottom: env(safe-area-inset-bottom, 0px);
+        --bg: #f3efe8;
+        --card: #fff;
+        --ink: #23211d;
+        --mute: #7a746a;
+        --line: #e0d9cc;
+        --acc: #e8590c;
+        --ok: #2f9e44;
+        --warn: #f08c00;
+        --bad: #d6336c;
+        --up: #868e96;
+        --track: #e9e3d6;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root:not([data-theme="light"]) {
+          --bg: #1a1916;
+          --card: #25231f;
+          --ink: #f1ece2;
+          --mute: #9a9385;
+          --line: #38342d;
+          --track: #38342d;
+        }
+      }
+      :root[data-theme="dark"] {
+        --bg: #1a1916;
+        --card: #25231f;
+        --ink: #f1ece2;
+        --mute: #9a9385;
+        --line: #38342d;
+        --track: #38342d;
+      }
+      html {
+        scroll-padding-top: env(safe-area-inset-top, 0px);
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--ink);
+        font:
+          14px/1.4 "IBM Plex Sans",
+          system-ui,
+          sans-serif;
+      }
+      .w {
+        max-width: 1280px;
+        margin: 0 auto;
+        padding: 16px;
+      }
+      h1,
+      .big {
+        font-family: "Barlow Condensed", "Arial Narrow", sans-serif;
+        text-transform: uppercase;
+        letter-spacing: 0.02em;
+      }
+      header {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        align-items: flex-end;
+        justify-content: space-between;
+        border-bottom: 4px solid var(--acc);
+        padding-bottom: 10px;
+      }
+      h1 {
+        margin: 0;
+        font-size: 34px;
+        line-height: 1;
+      }
+      .sub {
+        color: var(--mute);
+        font-size: 12px;
+      }
+      .live {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 12px;
+        font-weight: 600;
+      }
+      .dot {
+        width: 9px;
+        height: 9px;
+        border-radius: 50%;
+        background: var(--up);
+      }
+      .live.on .dot {
+        background: var(--ok);
+        animation: p 1.6s infinite;
+      }
+      @keyframes p {
+        50% {
+          opacity: 0.3;
+        }
+      }
+      .bar0 {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        align-items: center;
+        margin: 14px 0;
+      }
+      button,
+      input[type="date"] {
+        border: 1px solid var(--line);
+        background: var(--card);
+        color: var(--ink);
+        padding: 7px 14px;
+        font:
+          600 13px "IBM Plex Sans",
+          sans-serif;
+        cursor: pointer;
+        border-radius: 4px;
+      }
+      button.a {
+        background: var(--ink);
+        color: var(--bg);
+        border-color: var(--ink);
+      }
+      button.sm {
+        padding: 4px 10px;
+        font-size: 12px;
+      }
+      .k {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 10px;
+      }
+      .c {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        padding: 12px;
+      }
+      .l {
+        font-size: 11px;
+        color: var(--mute);
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+      }
+      .v {
+        font-size: 36px;
+        line-height: 1.1;
+      }
+      .ch {
+        display: flex;
+        align-items: flex-end;
+        gap: 6px;
+        height: 90px;
+        margin-top: 8px;
+        overflow-x: auto;
+      }
+      .ch div {
+        flex: 1;
+        min-width: 34px;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-end;
+        align-items: center;
+        height: 100%;
+        font-size: 10px;
+        color: var(--mute);
+      }
+      .ch i {
+        display: block;
+        width: 100%;
+        background: var(--acc);
+        border-radius: 2px 2px 0 0;
+      }
+      .f {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+        margin: 12px 0 8px;
+      }
+      .tw {
+        overflow-x: auto;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        min-width: 980px;
+      }
+      th {
+        font-size: 11px;
+        text-align: left;
+        color: var(--mute);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        padding: 6px;
+        border-bottom: 2px solid var(--line);
+      }
+      td {
+        padding: 7px 6px;
+        border-bottom: 1px solid var(--line);
+        vertical-align: middle;
+      }
+      td small {
+        display: block;
+        color: var(--mute);
+        font-size: 11px;
+      }
+      .bar {
+        position: relative;
+        height: 7px;
+        background: var(--track);
+        border-radius: 2px;
+        margin-top: 3px;
+        width: 90px;
+      }
+      .bar i {
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        background: var(--acc);
+        border-radius: 2px;
+      }
+      input[type="number"] {
+        width: 78px;
+        padding: 4px;
+        border: 1px solid var(--line);
+        background: var(--bg);
+        color: var(--ink);
+        border-radius: 3px;
+        font:
+          600 13px "IBM Plex Sans",
+          sans-serif;
+        text-align: right;
+      }
+      .s {
+        display: inline-block;
+        padding: 2px 8px;
+        border-radius: 10px;
+        font-size: 11px;
+        font-weight: 600;
+        color: #fff;
+        white-space: nowrap;
+      }
+      .G {
+        background: var(--ok);
+      }
+      .A {
+        background: var(--warn);
+      }
+      .R {
+        background: var(--bad);
+      }
+      .N {
+        background: var(--up);
+      }
+      .neg {
+        color: var(--bad);
+        font-weight: 600;
+      }
+      .pos {
+        color: var(--ok);
+      }
+      svg {
+        display: block;
+      }
+      svg text {
+        fill: var(--mute);
+        font-size: 10px;
+      }
+      .gr {
+        stroke: var(--line);
+      }
+      .ln {
+        fill: none;
+        stroke-width: 2.2;
+      }
+      .bar b {
+        position: absolute;
+        top: -3px;
+        bottom: -3px;
+        width: 2px;
+        background: var(--ink);
+      }
+      .two {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+        margin-top: 12px;
+      }
+      @media (max-width: 820px) {
+        .two {
+          grid-template-columns: 1fr;
+        }
+      }
+      .pw {
+        border-left: 4px solid var(--acc);
+      }
+      a.an {
+        cursor: pointer;
+        text-decoration: underline dotted;
+      }
+      .gb {
+        margin-bottom: 9px;
+      }
+      .gb > div:first-child {
+        display: flex;
+        justify-content: space-between;
+        font-size: 12px;
+        font-weight: 600;
+      }
+      .hm {
+        border-collapse: collapse;
+        font-size: 11px;
+        min-width: 0;
+        width: auto;
+      }
+      .hm th {
+        font-size: 10px;
+        padding: 2px;
+        text-align: center;
+      }
+      .hm td {
+        padding: 0;
+        border: 0;
+      }
+      .hm td.x {
+        min-width: 38px;
+        height: 24px;
+        text-align: center;
+        color: #fff;
+        font-weight: 600;
+        border: 2px solid var(--card);
+        border-radius: 4px;
+      }
+      .hm td.n {
+        background: var(--track);
+      }
+      #t {
+        position: fixed;
+        bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+        left: 50%;
+        transform: translateX(-50%);
+        background: var(--ink);
+        color: var(--bg);
+        padding: 8px 14px;
+        border-radius: 4px;
+        display: none;
+        font-size: 13px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="w">
+      <header>
+        <div>
+          <h1>Daily Site Progress Tracker</h1>
+          <div class="sub" id="asof"></div>
+        </div>
+        <div class="live" id="live">
+          <span class="dot"></span><span id="lt">Loading workbook…</span>
+        </div>
+      </header>
+      <div class="bar0">
+        <button class="sm" id="refreshBtn" onclick="loadBook1()">Refresh Excel</button><span id="bookStatus" class="sub" style="margin-left:8px"></span><span id="tabs"></span><span style="flex: 1"></span>
+        <button class="sm" onclick="mv(-1)">◀</button
+        ><input type="date" id="dt" onchange="sd(this.value)" /><button
+          class="sm"
+          onclick="mv(1)"
+        >
+          ▶</button
+        ><button class="sm" onclick="sd(TODAY)">Today</button>
+      </div>
+      <div class="k" id="k"></div>
+      <div class="c" style="margin-top: 12px">
+        <div class="l">
+          Daily scorecard — % of logged activities that met the asking rate
+          (last 14 days with entries)
+        </div>
+        <div class="ch" id="ch"></div>
+      </div>
+      <div class="two">
+        <div class="c">
+          <div class="l">Overall % complete — actual vs plan</div>
+          <div id="tr"></div>
+        </div>
+        <div class="c">
+          <div class="l" style="margin-bottom: 8px">
+            Work packages — actual vs planned for selected day
+          </div>
+          <div id="gp"></div>
+        </div>
+      </div>
+      <div class="c pw" id="dp" style="display: none; margin-top: 12px"></div>
+      <div class="f" id="f"></div>
+      <div class="c" id="tc">
+        <div class="tw">
+          <table>
+            <thead>
+              <tr>
+                <th>Activity</th>
+                <th>Done to date</th>
+                <th>Balance</th>
+                <th>Asking / day</th>
+                <th>Output on selected day</th>
+                <th>7-day avg</th>
+                <th>Forecast finish</th>
+                <th>Workmen avail / need</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="tb"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="c" id="mx" style="display: none">
+        <div class="l" style="margin-bottom: 8px">
+          Daily progress matrix — output per activity per day (green ≥ asking
+          rate · amber ≥ 70% · red below · grey not logged). Click an activity
+          for its charts.
+        </div>
+        <div class="tw" id="mxb"></div>
+      </div>
+      <div class="sub" style="margin-top: 10px">
+        Baseline = quantities achieved as on 3 Oct 2026 (Book1.xlsx). Enter each
+        day's output for an activity; progress, balance, asking rate (balance ÷
+        days left to target) and forecast update instantly. Entries are saved in this browser only (not shared between devices).
+        Activities tracked only as % are logged in percentage points.
+      </div>
+    </div>
+    <div id="t"></div>
+    <script>
+      const D = {
+          opd: {
+            name: "OPD Building",
+            rows: [
+              {
+                i: 0,
+                g: "Finishes",
+                n: "Brickwork",
+                u: "cum",
+                sc: 4151.0,
+                d: 4038.92,
+                s: "2025-09-10",
+                e: "2026-10-10",
+                mn: 19.0,
+                ma: 18.0,
+              },
+              {
+                i: 1,
+                g: "Finishes",
+                n: "Internal Plaster",
+                u: "sqm",
+                sc: 50950.0,
+                d: 49166.75,
+                s: "2025-11-30",
+                e: "2026-10-25",
+                mn: 8.0,
+                ma: 7.0,
+              },
+              {
+                i: 2,
+                g: "Finishes",
+                n: "Joineries",
+                u: "No.",
+                sc: 717.0,
+                d: 437.37,
+                s: "2026-01-25",
+                e: "2026-11-15",
+                mn: 2.0,
+                ma: 5.0,
+              },
+              {
+                i: 3,
+                g: "Finishes",
+                n: "Fire door frame & shutter",
+                u: "%",
+                sc: 100.0,
+                d: 0.0,
+                s: "2026-03-21",
+                e: "2026-10-30",
+                mn: 0,
+                ma: 0,
+              },
+              {
+                i: 4,
+                g: "Finishes",
+                n: "Flooring & Dado",
+                u: "sqm",
+                sc: 29200.0,
+                d: 23126.4,
+                s: "2025-12-18",
+                e: "2026-11-25",
+                mn: 39.0,
+                ma: 30.0,
+              },
+              {
+                i: 5,
+                g: "Finishes",
+                n: "False Ceiling",
+                u: "sqm",
+                sc: 15240.0,
+                d: 4419.6,
+                s: "2026-07-08",
+                e: "2026-12-10",
+                mn: 13.0,
+                ma: 14.0,
+              },
+              {
+                i: 6,
+                g: "Finishes",
+                n: "False Ceiling \u2013 Ground Floor", x: 1,
+                u: "%",
+                sc: 100.0,
+                d: 0.0,
+                s: "2026-07-08",
+                e: "2026-10-15",
+                mn: 0,
+                ma: 0,
+              },
+              {
+                i: 7,
+                g: "Finishes",
+                n: "False Ceiling \u2013 First Floor", x: 1,
+                u: "%",
+                sc: 100.0,
+                d: 0.0,
+                s: "2026-08-02",
+                e: "2026-10-28",
+                mn: 0,
+                ma: 0,
+              },
+              {
+                i: 8,
+                g: "Finishes",
+                n: "False Ceiling \u2013 Second Floor", x: 1,
+                u: "%",
+                sc: 100.0,
+                d: 0.0,
+                s: "2026-08-27",
+                e: "2026-11-20",
+                mn: 0,
+                ma: 0,
+              },
+              {
+                i: 9,
+                g: "Finishes",
+                n: "False Ceiling \u2013 Third Floor", x: 1,
+                u: "%",
+                sc: 100.0,
+                d: 0.0,
+                s: "2026-09-21",
+                e: "2026-12-15",
+                mn: 0,
+                ma: 0,
+              },
+              {
+                i: 10,
+                g: "Finishes",
+                n: "Lift facia granite",
+                u: "sqm",
+                sc: 240.0,
+                d: 9.6,
+                s: "2026-09-30",
+                e: "2026-11-25",
+                mn: 1.0,
+                ma: 0,
+              },
+              {
+                i: 11,
+                g: "Finishes",
+                n: "Interior Works",
+                u: "sqm",
+                sc: 640.0,
+                d: 0.0,
+                s: "2026-10-25",
+                e: "2026-12-24",
+                mn: 1.0,
+                ma: 0,
+              },
+              {
+                i: 12,
+                g: "Finishes",
+                n: "SS Handrail",
+                u: "Rm",
+                sc: 475.0,
+                d: 0.0,
+                s: "2026-11-15",
+                e: "2026-12-24",
+                mn: 1.0,
+                ma: 0,
+              },
+              {
+                i: 13,
+                g: "External",
+                n: "Elevation A",
+                u: "sqm",
+                sc: 934.86,
+                d: 506.7,
+                s: "2026-04-04",
+                e: "2026-11-15",
+                mn: 3.0,
+                ma: 2.0,
+              },
+              {
+                i: 14,
+                g: "External",
+                n: "Elevation B",
+                u: "sqm",
+                sc: 447.47,
+                d: 250.59,
+                s: "2026-06-18",
+                e: "2026-11-25",
+                mn: 1.0,
+                ma: 3.0,
+              },
+              {
+                i: 15,
+                g: "External",
+                n: "Elevation C",
+                u: "sqm",
+                sc: 564.0,
+                d: 191.76,
+                s: "2026-08-10",
+                e: "2026-12-05",
+                mn: 2.0,
+                ma: 2.0,
+              },
+              {
+                i: 16,
+                g: "External",
+                n: "Elevation D",
+                u: "sqm",
+                sc: 431.0,
+                d: 107.75,
+                s: "2026-08-25",
+                e: "2026-12-15",
+                mn: 1.0,
+                ma: 0,
+              },
+              {
+                i: 17,
+                g: "External",
+                n: "Elevation A (2)", x: 1,
+                u: "%",
+                sc: 100.0,
+                d: 54.0,
+                s: "2026-04-04",
+                e: "2026-10-20",
+                mn: 0,
+                ma: 0,
+              },
+              {
+                i: 18,
+                g: "External",
+                n: "Elevation B (2)", x: 1,
+                u: "%",
+                sc: 100.0,
+                d: 53.0,
+                s: "2026-06-18",
+                e: "2026-11-05",
+                mn: 0,
+                ma: 0,
+              },
+              {
+                i: 19,
+                g: "External",
+                n: "Elevation C (2)", x: 1,
+                u: "%",
+                sc: 100.0,
+                d: 33.0,
+                s: "2026-08-10",
+                e: "2026-11-22",
+                mn: 0,
+                ma: 0,
+              },
+              {
+                i: 20,
+                g: "External",
+                n: "Elevation D (2)", x: 1,
+                u: "%",
+                sc: 100.0,
+                d: 25.0,
+                s: "2026-08-25",
+                e: "2026-12-05",
+                mn: 0,
+                ma: 0,
+              },
+              {
+                i: 21,
+                g: "First Fixtures",
+                n: "Cable Tray Installation",
+                u: "Rm",
+                sc: 1500.0,
+                d: 1425.0,
+                s: "2026-03-12",
+                e: "2026-10-20",
+                mn: 1.0,
+                ma: 2.0,
+              },
+              {
+                i: 22,
+                g: "First Fixtures",
+                n: "CI/Gi Piping",
+                u: "Rm",
+                sc: 13030.0,
+                d: 11596.7,
+                s: "2026-01-28",
+                e: "2026-10-31",
+                mn: 4.0,
+                ma: 4.0,
+              },
+              {
+                i: 23,
+                g: "First Fixtures",
+                n: "Ducting & Insulation",
+                u: "sqm",
+                sc: 7203.0,
+                d: 6780.0,
+                s: "2025-12-11",
+                e: "2026-10-27",
+                mn: 2.0,
+                ma: 4.0,
+              },
+              {
+                i: 24,
+                g: "First Fixtures",
+                n: "Fire Piping installation",
+                u: "sqm",
+                sc: 9363.0,
+                d: 8504.0,
+                s: "2026-01-10",
+                e: "2026-10-25",
+                mn: 3.0,
+                ma: 6.0,
+              },
+              {
+                i: 25,
+                g: "First Fixtures",
+                n: "MGPS Copper Piping",
+                u: "Rm",
+                sc: 5158.0,
+                d: 1237.92,
+                s: "2026-09-10",
+                e: "2026-11-25",
+                mn: 8.0,
+                ma: 0,
+              },
+              {
+                i: 26,
+                g: "First Fixtures",
+                n: "PTTS Pipe installation",
+                u: "Rm",
+                sc: 630.0,
+                d: 215.0,
+                s: "2026-09-10",
+                e: "2026-11-15",
+                mn: 1.0,
+                ma: 2.0,
+              },
+              {
+                i: 27,
+                g: "First Fixtures",
+                n: "Under deck Insulation",
+                u: "sqm",
+                sc: 3426.0,
+                d: 342.6,
+                s: "2026-09-30",
+                e: "2026-10-28",
+                mn: 13.0,
+                ma: 6.0,
+              },
+              {
+                i: 28,
+                g: "Second Fix",
+                n: "Wiring",
+                u: "Rm",
+                sc: 46027.0,
+                d: 22092.96,
+                s: "2026-08-18",
+                e: "2026-11-20",
+                mn: 20.0,
+                ma: 16.0,
+              },
+              {
+                i: 29,
+                g: "Second Fix",
+                n: "Cable Laying & Panel Instt.",
+                u: "Rm",
+                sc: 16308.0,
+                d: 8643.24,
+                s: "2026-07-10",
+                e: "2026-11-28",
+                mn: 6.0,
+                ma: 4.0,
+              },
+              {
+                i: 30,
+                g: "Second Fix",
+                n: "UPS Installation",
+                u: "No.",
+                sc: 4.0,
+                d: 3.6,
+                s: "2026-10-05",
+                e: "2026-10-31",
+                mn: 0,
+                ma: 0,
+              },
+              {
+                i: 31,
+                g: "Second Fix",
+                n: "Dropper Installation",
+                u: "No.",
+                sc: 1517.0,
+                d: 0.0,
+                s: "2026-10-18",
+                e: "2026-12-10",
+                mn: 2.0,
+                ma: 0,
+              },
+              {
+                i: 32,
+                g: "Second Fix",
+                n: "HVAC Pipe Testing",
+                u: "Rm",
+                sc: 2800.0,
+                d: 2585.0,
+                s: "2026-08-10",
+                e: "2026-11-10",
+                mn: 2.0,
+                ma: 0,
+              },
+              {
+                i: 33,
+                g: "Second Fix",
+                n: "AHU Connection",
+                u: "No.",
+                sc: 45.0,
+                d: 39.0,
+                s: "2026-08-19",
+                e: "2026-11-28",
+                mn: 0,
+                ma: 4.0,
+              },
+              {
+                i: 34,
+                g: "Second Fix",
+                n: "Wet Riser & FHC installation",
+                u: "%",
+                sc: 100.0,
+                d: 0.0,
+                s: "2026-08-10",
+                e: "2026-10-24",
+                mn: 0,
+                ma: 0,
+              },
+              {
+                i: 35,
+                g: "Second Fix",
+                n: "CAT 6 cabling",
+                u: "Rm",
+                sc: 65000.0,
+                d: 28600.0,
+                s: "2026-08-10",
+                e: "2026-11-15",
+                mn: 14.0,
+                ma: 8.0,
+              },
+              {
+                i: 36,
+                g: "Second Fix",
+                n: "PA & FAS cabling",
+                u: "Rm",
+                sc: 24107.0,
+                d: 18628.0,
+                s: "2026-07-18",
+                e: "2026-11-15",
+                mn: 2.0,
+                ma: 4.0,
+              },
+              {
+                i: 37,
+                g: "Second Fix",
+                n: "Fire Panel Installation",
+                u: "No.",
+                sc: 1.0,
+                d: 0.0,
+                s: "2026-09-29",
+                e: "2026-10-15",
+                mn: 0,
+                ma: 0,
+              },
+              {
+                i: 38,
+                g: "Second Fix",
+                n: "Network Switch",
+                u: "No.",
+                sc: 12.0,
+                d: 4.0,
+                s: "2026-09-29",
+                e: "2026-11-20",
+                mn: 1.0,
+                ma: 4.0,
+              },
+              {
+                i: 39,
+                g: "Second Fix",
+                n: "Final Fixture",
+                u: "lot",
+                sc: 1.0,
+                d: 0.02,
+                s: "2026-11-20",
+                e: "2026-12-20",
+                mn: 0,
+                ma: 0,
+              },
+              {
+                i: 40,
+                g: "Terrace",
+                n: "PHE Piping installation",
+                u: "rm",
+                sc: 2250.0,
+                d: 0.0,
+                s: "2026-10-10",
+                e: "2026-11-15",
+                mn: 6.0,
+                ma: 7.0,
+              },
+              {
+                i: 41,
+                g: "Terrace",
+                n: "Solar Panel Installation",
+                u: "No.",
+                sc: 128.0,
+                d: 0.0,
+                s: "2026-11-05",
+                e: "2026-12-10",
+                mn: 0,
+                ma: 0,
+              },
+              {
+                i: 42,
+                g: "Terrace",
+                n: "Over Head Tank",
+                u: "No.",
+                sc: 1.0,
+                d: 0.6,
+                s: "2026-08-22",
+                e: "2026-11-25",
+                mn: 3.0,
+                ma: 0,
+              },
+              {
+                i: 43,
+                g: "Terrace",
+                n: "Terrace Waterproofing",
+                u: "sqm",
+                sc: 3528.0,
+                d: 3528.0,
+                s: "2026-08-05",
+                e: "2026-12-05",
+                mn: 2.0,
+                ma: 2.0,
+              },
+              {
+                i: 44,
+                g: "Terrace",
+                n: "Truss with Polycarbonate Sheet",
+                u: "sqm",
+                sc: 1015.0,
+                d: 659.75,
+                s: "2026-09-30",
+                e: "2026-10-31",
+                mn: 3.0,
+                ma: 2.0,
+              },
+              {
+                i: 45,
+                g: "Lift Installation with slow speed",
+                n: "Lift \u2013 2 No.s",
+                u: "No.",
+                sc: 2.0,
+                d: 2.0,
+                s: "2026-06-05",
+                e: "2026-07-30",
+                mn: 0,
+                ma: 0,
+              },
+              {
+                i: 46,
+                g: "Lift Installation with slow speed",
+                n: "Lift \u2013 3 No.s",
+                u: "No.",
+                sc: 3.0,
+                d: 2.55,
+                s: "2026-08-08",
+                e: "2026-10-25",
+                mn: 4.0,
+                ma: 4.0,
+              },
+              {
+                i: 47,
+                g: "Lift Installation with slow speed",
+                n: "Lift \u2013 1 No.",
+                u: "No.",
+                sc: 1.0,
+                d: 0.0,
+                s: "2026-10-11",
+                e: "2026-11-28",
+                mn: 2.0,
+                ma: 2.0,
+              },
+              {
+                i: 48,
+                g: "Lift Installation with slow speed",
+                n: "Lift \u2013 1 No. (2)",
+                u: "No.",
+                sc: 1.0,
+                d: 0.0,
+                s: "2026-11-15",
+                e: "2026-12-10",
+                mn: 0,
+                ma: 0,
+              },
+              {
+                i: 49,
+                g: "Permanent Power",
+                n: "ESS1 to OPD Cable Laying",
+                u: "%",
+                sc: 100.0,
+                d: 0.0,
+                s: "2026-09-29",
+                e: "2026-10-20",
+                mn: 0,
+                ma: 0,
+              },
+              {
+                i: 50,
+                g: "Permanent Power",
+                n: "Main LT Panel Energisation",
+                u: "%",
+                sc: 100.0,
+                d: 0.0,
+                s: "2026-10-31",
+                e: "2026-11-20",
+                mn: 0,
+                ma: 0,
+              },
+              {
+                i: 51,
+                g: "Permanent Power",
+                n: "Rising Main",
+                u: "%",
+                sc: 100.0,
+                d: 0.0,
+                s: "2026-10-28",
+                e: "2026-11-25",
+                mn: 0,
+                ma: 0,
+              },
+              {
+                i: 52,
+                g: "Testing with Permanent Power / Completion",
+                n: "Lift",
+                u: "%",
+                sc: 100.0,
+                d: 0.0,
+                s: "2026-12-01",
+                e: "2026-12-24",
+                mn: 0,
+                ma: 0,
+              },
+              {
+                i: 53,
+                g: "Testing with Permanent Power / Completion",
+                n: "IT/Data Services",
+                u: "%",
+                sc: 100.0,
+                d: 0.0,
+                s: "2026-11-25",
+                e: "2026-12-20",
+                mn: 0,
+                ma: 0,
+              },
+              {
+                i: 54,
+                g: "Testing with Permanent Power / Completion",
+                n: "Fire Control System",
+                u: "%",
+                sc: 100.0,
+                d: 0.0,
+                s: "2026-12-05",
+                e: "2026-12-24",
+                mn: 0,
+                ma: 0,
+              },
+              {
+                i: 55,
+                g: "Testing with Permanent Power / Completion",
+                n: "HVAC System",
+                u: "%",
+                sc: 100.0,
+                d: 0.0,
+                s: "2026-11-20",
+                e: "2026-12-20",
+                mn: 0,
+                ma: 0,
+              },
+            ],
+          },
+          emr: {
+            name: "Emergency Building",
+            rows: [
+              {
+                i: 0,
+                g: "Finishes",
+                n: "Brickwork",
+                u: "CUM",
+                sc: 4228.0,
+                d: 4092.7,
+                s: "2025-10-08",
+                e: "2026-10-25",
+                mn: 6.0,
+                ma: 8.0,
+              },
+              {
+                i: 1,
+                g: "Finishes",
+                n: "Internal Plaster",
+                u: "sqm",
+                sc: 55280.0,
+                d: 44224.0,
+                s: "2026-01-10",
+                e: "2026-11-10",
+                mn: 25.0,
+                ma: 30.0,
+              },
+              {
+                i: 2,
+                g: "Finishes",
+                n: "Joineries",
+                u: "No.",
+                sc: 782.0,
+                d: 445.74,
+                s: "2026-03-21",
+                e: "2026-12-15",
+                mn: 2.0,
+                ma: 0,
+              },
+              {
+                i: 3,
+                g: "Finishes",
+                n: "Fire door frame & shutter",
+                u: "%",
+                sc: 100.0,
+                d: 0.0,
+                s: "2026-03-21",
+                e: "2026-12-15",
+                mn: 0,
+                ma: 0,
+              },
+              {
+                i: 4,
+                g: "Finishes",
+                n: "Flooring & Dado",
+                u: "sqm",
+                sc: 26142.0,
+                d: 21175.02,
+                s: "2026-02-20",
+                e: "2026-11-30",
+                mn: 9.0,
+                ma: 12.0,
+              },
+              {
+                i: 5,
+                g: "Finishes",
+                n: "False Ceiling",
+                u: "sqm",
+                sc: 11273.0,
+                d: 0.0,
+                s: "2026-10-20",
+                e: "2026-12-22",
+                mn: 18.0,
+                ma: 0,
+              },
+              {
+                i: 6,
+                g: "Finishes",
+                n: "Lift lobby",
+                u: "sqm",
+                sc: 290.0,
+                d: 0.0,
+                s: "2026-10-20",
+                e: "2026-12-20",
+                mn: 1.0,
+                ma: 0,
+              },
+              {
+                i: 7,
+                g: "Finishes",
+                n: "Interior Works",
+                u: "sqm",
+                sc: 530.0,
+                d: 0.0,
+                s: "2026-11-18",
+                e: "2026-12-18",
+                mn: 2.0,
+                ma: 0,
+              },
+              {
+                i: 8,
+                g: "Finishes",
+                n: "SS Handrail",
+                u: "Rm",
+                sc: 475.0,
+                d: 0.0,
+                s: "2026-11-10",
+                e: "2026-12-20",
+                mn: 1.0,
+                ma: 0,
+              },
+              {
+                i: 9,
+                g: "Ground Floor ( 2 Nos.)",
+                n: "Ground Floor ( 2 Nos.) \u2013 Civil Work",
+                u: "%",
+                sc: 100.0,
+                d: 100.0,
+                s: "2026-05-25",
+                e: "2026-08-28",
+                mn: 0,
+                ma: 0,
+              },
+              {
+                i: 10,
+                g: "Ground Floor ( 2 Nos.)",
+                n: "Ground Floor ( 2 Nos.) \u2013 OT Works",
+                u: "%",
+                sc: 100.0,
+                d: 38.0,
+                s: "2026-08-28",
+                e: "2026-10-15",
+                mn: 4.0,
+                ma: 0,
+              },
+              {
+                i: 11,
+                g: "2nd Floor (2 Nos.)",
+                n: "Lift \u2013 2nd Floor (2 Nos.) \u2013 Civil Work",
+                u: "%",
+                sc: 100.0,
+                d: 99.0,
+                s: "2026-06-20",
+                e: "2026-10-03",
+                mn: 8.0,
+                ma: 8.0,
+              },
+              {
+                i: 12,
+                g: "2nd Floor (2 Nos.)",
+                n: "Lift \u2013 2nd Floor (2 Nos.) \u2013 OT Works",
+                u: "%",
+                sc: 100.0,
+                d: 0.0,
+                s: "2026-10-03",
+                e: "2026-10-30",
+                mn: 0,
+                ma: 0,
+              },
+              {
+                i: 13,
+                g: "3rd Floor (12 Nos.)",
+                n: "Lift \u2013 3rd Floor (12 Nos.) \u2013 Civil Work",
+                u: "%",
+                sc: 100.0,
+                d: 31.0,
+                s: "2026-07-05",
+                e: "2026-10-30",
+                mn: 10.0,
+                ma: 12.0,
+              },
+              {
+                i: 14,
+                g: "3rd Floor (12 Nos.)",
+                n: "Lift \u2013 3rd Floor (12 Nos.) \u2013 OT Works",
+                u: "%",
+                sc: 100.0,
+                d: 0.0,
+                s: "2026-10-30",
+                e: "2026-12-21",
+                mn: 0,
+                ma: 0,
+              },
+              {
+                i: 15,
+                g: "CSSD Room",
+                n: "CSSD Room \u2013 Civil Work",
+                u: "%",
+                sc: 100.0,
+                d: 100.0,
+                s: "2026-07-10",
+                e: "2026-08-30",
+                mn: 0,
+                ma: 0,
+              },
+              {
+                i: 16,
+                g: "CSSD Room",
+                n: "CSSD Room \u2013 Service Oriented Work",
+                u: "%",
+                sc: 100.0,
+                d: 58.0,
+                s: "2026-09-01",
+                e: "2026-11-25",
+                mn: 0,
+                ma: 0,
+              },
+              {
+                i: 17,
+                g: "Above Terrace",
+                n: "Staircase - Head Room",
+                u: "CUM",
+                sc: 340.0,
+                d: 129.2,
+                s: "2026-09-15",
+                e: "2026-10-30",
+                mn: 2.0,
+                ma: 3.0,
+              },
+              {
+                i: 18,
+                g: "Above Terrace",
+                n: "Over Head Tank",
+                u: "sqm",
+                sc: 350.0,
+                d: 147.0,
+                s: "2026-09-25",
+                e: "2026-11-01",
+                mn: 2.0,
+                ma: 4.0,
+              },
+              {
+                i: 19,
+                g: "Above Terrace",
+                n: "Terrace Waterproofing",
+                u: "sqm",
+                sc: 3754.0,
+                d: 2552.72,
+                s: "2026-09-07",
+                e: "2026-10-30",
+                mn: 5.0,
+                ma: 3.0,
+              },
+              {
+                i: 20,
+                g: "Above Terrace",
+                n: "Truss & Polycarbonate Sheet",
+                u: "sqm",
+                sc: 884.5,
+                d: 592.62,
+                s: "2026-10-05",
+                e: "2026-10-25",
+                mn: 2.0,
+                ma: 0,
+              },
+              {
+                i: 21,
+                g: "External",
+                n: "Elevation A",
+                u: "sqm",
+                sc: 935.0,
+                d: 392.7,
+                s: "2026-08-05",
+                e: "2026-12-10",
+                mn: 3.0,
+                ma: 8.0,
+              },
+              {
+                i: 22,
+                g: "External",
+                n: "Elevation B",
+                u: "sqm",
+                sc: 490.0,
+                d: 68.6,
+                s: "2026-08-18",
+                e: "2026-12-12",
+                mn: 2.0,
+                ma: 5.0,
+              },
+              {
+                i: 23,
+                g: "External",
+                n: "Elevation C",
+                u: "sqm",
+                sc: 564.0,
+                d: 95.88,
+                s: "2026-09-05",
+                e: "2026-12-18",
+                mn: 2.0,
+                ma: 2.0,
+              },
+              {
+                i: 24,
+                g: "External",
+                n: "Elevation D",
+                u: "sqm",
+                sc: 485.0,
+                d: 121.25,
+                s: "2026-08-10",
+                e: "2026-12-10",
+                mn: 2.0,
+                ma: 0,
+              },
+              {
+                i: 25,
+                g: "External",
+                n: "Fascia Beam",
+                u: "Rm",
+                sc: 437.6,
+                d: 144.41,
+                s: "2026-09-02",
+                e: "2026-11-30",
+                mn: 2.0,
+                ma: 3.0,
+              },
+              {
+                i: 26,
+                g: "First Fixtures",
+                n: "Cable Tray Installation",
+                u: "Rm",
+                sc: 1537.0,
+                d: 1537.0,
+                s: "2026-01-12",
+                e: "2026-09-10",
+                mn: 0,
+                ma: 0,
+              },
+              {
+                i: 27,
+                g: "First Fixtures",
+                n: "CI/GI Piping",
+                u: "Rm",
+                sc: 4560.0,
+                d: 3146.4,
+                s: "2026-01-27",
+                e: "2026-12-10",
+                mn: 5.0,
+                ma: 4.0,
+              },
+              {
+                i: 28,
+                g: "First Fixtures",
+                n: "Ducting & Insulation",
+                u: "sqm",
+                sc: 9830.0,
+                d: 9633.4,
+                s: "2026-01-20",
+                e: "2026-10-31",
+                mn: 2.0,
+                ma: 5.0,
+              },
+              {
+                i: 29,
+                g: "First Fixtures",
+                n: "Fire Piping installation",
+                u: "Rm",
+                sc: 8425.0,
+                d: 5981.75,
+                s: "2026-01-10",
+                e: "2026-12-02",
+                mn: 10.0,
+                ma: 8.0,
+              },
+              {
+                i: 30,
+                g: "First Fixtures",
+                n: "MGPS Copper Piping",
+                u: "Rm",
+                sc: 8263.0,
+                d: 1983.12,
+                s: "2026-09-10",
+                e: "2026-12-18",
+                mn: 21.0,
+                ma: 15.0,
+              },
+              {
+                i: 31,
+                g: "First Fixtures",
+                n: "PTTS Pipe installation",
+                u: "Rm",
+                sc: 820.0,
+                d: 0.0,
+                s: "2026-10-10",
+                e: "2026-12-05",
+                mn: 4.0,
+                ma: 3.0,
+              },
+              {
+                i: 32,
+                g: "First Fixtures",
+                n: "Under deck Insulation",
+                u: "sqm",
+                sc: 3121.0,
+                d: 0.0,
+                s: "2026-11-01",
+                e: "2026-12-05",
+                mn: 23.0,
+                ma: 16.0,
+              },
+              {
+                i: 33,
+                g: "Second Fix",
+                n: "Wiring",
+                u: "Rm",
+                sc: 58034.0,
+                d: 14508.5,
+                s: "2026-09-03",
+                e: "2026-11-27",
+                mn: 27.0,
+                ma: 18.0,
+              },
+              {
+                i: 34,
+                g: "Second Fix",
+                n: "Cable Laying & Panel Instt.",
+                u: "Rm",
+                sc: 23078.0,
+                d: 8769.64,
+                s: "2026-09-05",
+                e: "2026-11-21",
+                mn: 23.0,
+                ma: 15.0,
+              },
+              {
+                i: 35,
+                g: "Second Fix",
+                n: "UPS Installation",
+                u: "No.",
+                sc: 4.0,
+                d: 0.0,
+                s: "2026-12-05",
+                e: "2026-12-20",
+                mn: 0,
+                ma: 0,
+              },
+              {
+                i: 36,
+                g: "Second Fix",
+                n: "HVAC Pipe Testing",
+                u: "Rm",
+                sc: 1611.32,
+                d: 757.32,
+                s: "2026-07-27",
+                e: "2026-12-09",
+                mn: 0,
+                ma: 0,
+              },
+              {
+                i: 37,
+                g: "Second Fix",
+                n: "AHU Connection",
+                u: "No.",
+                sc: 101.33,
+                d: 25.33,
+                s: "2026-07-27",
+                e: "2026-12-09",
+                mn: 0,
+                ma: 0,
+              },
+              {
+                i: 38,
+                g: "Second Fix",
+                n: "CAT 6 cabling",
+                u: "Rm",
+                sc: 58362.0,
+                d: 26262.9,
+                s: "2026-06-16",
+                e: "2026-12-08",
+                mn: 22.0,
+                ma: 19.0,
+              },
+              {
+                i: 39,
+                g: "Second Fix",
+                n: "PA & FAS cabling",
+                u: "Rm",
+                sc: 25900.0,
+                d: 16576.0,
+                s: "2026-06-16",
+                e: "2026-11-27",
+                mn: 18.0,
+                ma: 17.0,
+              },
+              {
+                i: 40,
+                g: "Second Fix",
+                n: "Fire Panel Installation",
+                u: "No.",
+                sc: 1.0,
+                d: 0.0,
+                s: "2026-10-10",
+                e: "2026-10-26",
+                mn: 0,
+                ma: 0,
+              },
+              {
+                i: 41,
+                g: "Second Fix",
+                n: "Network Switch",
+                u: "No.",
+                sc: 6.0,
+                d: 0.0,
+                s: "2026-10-15",
+                e: "2026-12-11",
+                mn: 0,
+                ma: 0,
+              },
+              {
+                i: 42,
+                g: "Second Fix",
+                n: "Final Fixture",
+                u: "nos",
+                sc: 8.0,
+                d: 0.0,
+                s: "2026-11-20",
+                e: "2026-12-10",
+                mn: 0,
+                ma: 0,
+              },
+              {
+                i: 43,
+                g: "Terrace",
+                n: "PHE Piping installation",
+                u: "Rm",
+                sc: 1872.0,
+                d: 0.0,
+                s: "2026-10-15",
+                e: "2026-11-25",
+                mn: 6.0,
+                ma: 5.0,
+              },
+              {
+                i: 44,
+                g: "Terrace",
+                n: "Cable Tray Installation (2)",
+                u: "%",
+                sc: 100.0,
+                d: 100.0,
+                s: "2026-10-15",
+                e: "2026-11-21",
+                mn: 0,
+                ma: 0,
+              },
+              {
+                i: 45,
+                g: "Terrace",
+                n: "Solar Panel Installation",
+                u: "No.",
+                sc: 195.0,
+                d: 0.0,
+                s: "2026-11-05",
+                e: "2026-12-16",
+                mn: 1.0,
+                ma: 0,
+              },
+              {
+                i: 46,
+                g: "Terrace",
+                n: "OHT",
+                u: "No.",
+                sc: 969.49,
+                d: 397.49,
+                s: "2026-11-05",
+                e: "2026-12-10",
+                mn: 1.0,
+                ma: 4.0,
+              },
+              {
+                i: 47,
+                g: "Terrace",
+                n: "Terrace Waterproofing (2)",
+                u: "sqm",
+                sc: 1012.5,
+                d: 688.5,
+                s: "2026-09-10",
+                e: "2026-12-05",
+                mn: 1.0,
+                ma: 3.0,
+              },
+              {
+                i: 48,
+                g: "Terrace",
+                n: "Truss with Polycarbonate Sheet",
+                u: "sqm",
+                sc: 265.0,
+                d: 0.0,
+                s: "2026-09-30",
+                e: "2026-11-15",
+                mn: 0,
+                ma: 2.0,
+              },
+              {
+                i: 49,
+                g: "Lift Installation with slow speed",
+                n: "Lift \u2013 2 Nos.",
+                u: "No.",
+                sc: 2.0,
+                d: 0.0,
+                s: "2026-09-30",
+                e: "2026-11-05",
+                mn: 4.0,
+                ma: 6.0,
+              },
+              {
+                i: 50,
+                g: "Lift Installation with slow speed",
+                n: "Lift \u2013 1 Nos.",
+                u: "No.",
+                sc: 1.0,
+                d: 0.0,
+                s: "2026-10-07",
+                e: "2026-11-18",
+                mn: 0,
+                ma: 0,
+              },
+              {
+                i: 51,
+                g: "Lift Installation with slow speed",
+                n: "Lift \u2013 2 Nos. (2)",
+                u: "No.",
+                sc: 2.0,
+                d: 0.0,
+                s: "2026-10-11",
+                e: "2026-11-28",
+                mn: 0,
+                ma: 0,
+              },
+              {
+                i: 52,
+                g: "Lift Installation with slow speed",
+                n: "Lift \u2013 2 Nos. (3)",
+                u: "No.",
+                sc: 2.0,
+                d: 0.0,
+                s: "2026-11-15",
+                e: "2026-12-21",
+                mn: 0,
+                ma: 0,
+              },
+              {
+                i: 53,
+                g: "Lift Installation with slow speed",
+                n: "Lift \u2013 2 Nos. (4)",
+                u: "No.",
+                sc: 2.0,
+                d: 0.0,
+                s: "2026-10-24",
+                e: "2026-12-08",
+                mn: 0,
+                ma: 0,
+              },
+              {
+                i: 54,
+                g: "Lift Installation with slow speed",
+                n: "Lift \u2013 2 Nos. (Dumb waiter)",
+                u: "No.",
+                sc: 2.0,
+                d: 0.0,
+                s: "2026-10-28",
+                e: "2026-12-17",
+                mn: 0,
+                ma: 0,
+              },
+              {
+                i: 55,
+                g: "Permanent Power",
+                n: "ESS1 to EMR Cable laying",
+                u: "%",
+                sc: 100.0,
+                d: 0.0,
+                s: "2026-09-10",
+                e: "2026-10-08",
+                mn: 0,
+                ma: 0,
+              },
+              {
+                i: 56,
+                g: "Permanent Power",
+                n: "Main LT Panel Energisation",
+                u: "%",
+                sc: 100.0,
+                d: 0.0,
+                s: "2026-10-25",
+                e: "2026-11-10",
+                mn: 0,
+                ma: 0,
+              },
+              {
+                i: 57,
+                g: "Permanent Power",
+                n: "Rising Main",
+                u: "%",
+                sc: 100.0,
+                d: 0.0,
+                s: "2026-10-28",
+                e: "2026-11-15",
+                mn: 0,
+                ma: 0,
+              },
+              {
+                i: 58,
+                g: "Testing with Permanent Power / Completion",
+                n: "Lift",
+                u: "%",
+                sc: 100.0,
+                d: 0.0,
+                s: "2026-12-01",
+                e: "2026-12-24",
+                mn: 0,
+                ma: 0,
+              },
+              {
+                i: 59,
+                g: "Testing with Permanent Power / Completion",
+                n: "IT/Data Services",
+                u: "%",
+                sc: 100.0,
+                d: 0.0,
+                s: "2026-11-25",
+                e: "2026-12-20",
+                mn: 0,
+                ma: 0,
+              },
+              {
+                i: 60,
+                g: "Testing with Permanent Power / Completion",
+                n: "Fire Control System",
+                u: "%",
+                sc: 100.0,
+                d: 0.0,
+                s: "2026-12-05",
+                e: "2026-12-24",
+                mn: 0,
+                ma: 0,
+              },
+              {
+                i: 61,
+                g: "Testing with Permanent Power / Completion",
+                n: "HVAC System",
+                u: "%",
+                sc: 100.0,
+                d: 0.0,
+                s: "2026-11-20",
+                e: "2026-12-20",
+                mn: 0,
+                ma: 0,
+              },
+            ],
+          },
+        },
+        BASE = "2026-10-03",
+        DAY = 864e5,
+        TODAY = new Date(new Date() - new Date().getTimezoneOffset() * 6e4)
+          .toISOString()
+          .slice(0, 10);
+      const FL = ["Active", "Below rate", "Upcoming", "Done", "All"];
+      let cur = "opd",
+        fs = "Active",
+        view = "tb",
+        ai = null,
+        sel = TODAY < "2026-10-04" ? "2026-10-04" : TODAY;
+      const LG = { opd: {}, emr: {} };
+      const $ = (id) => document.getElementById(id),
+        dd = (s) => new Date(s + "T00:00:00"),
+        iso = (x) =>
+          new Date(x - new Date().getTimezoneOffset() * 6e4)
+            .toISOString()
+            .slice(0, 10);
+      const f1 = (x) =>
+        x >= 100
+          ? Math.round(x).toLocaleString()
+          : x >= 10
+            ? (Math.round(x * 10) / 10).toString()
+            : (Math.round(x * 100) / 100).toString();
+      const fm = (s) =>
+        dd(s).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+      function toast(m) {
+        const t = $("t");
+        t.textContent = m;
+        t.style.display = "block";
+        setTimeout(() => (t.style.display = "none"), 2400);
+      }
+      const q = (r, date) => LG[cur][date]?.[r.i];
+      function before(r, date) {
+        let s = r.d;
+        for (const k in LG[cur])
+          if (k < date && LG[cur][k][r.i] != null) s += LG[cur][k][r.i];
+        return s;
+      }
+      // Sheet rule: asking rate = balance ÷ days to target, less a 4-day buffer for
+      // activities already started at the 3-Oct baseline; no buffer for ones not yet started.
+      function ask(r, date) {
+        const from = Math.max(r.s ? dd(r.s).getTime() : 0, dd(date).getTime() - DAY),
+          buf = !r.s || r.s <= BASE ? 4 : 0,
+          dl = Math.max(1, Math.round((dd(r.e) - from) / DAY) - buf);
+        return Math.max(0, r.sc - before(r, date)) / dl;
+      }
+      function avg(r) {
+        let s = 0,
+          n = 0;
+        for (let i = 0; i < 7; i++) {
+          const k = iso(dd(sel) - i * DAY),
+            x = LG[cur][k];
+          if (x && x[r.i] != null) {
+            n++;
+            s += x[r.i];
+          }
+        }
+        return n ? s / n : null;
+      }
+      function info(r) {
+        const cum = before(r, "9999") >= 0 ? before(r, "9999") : r.d,
+          bal = Math.max(0, r.sc - cum),
+          a = avg(r),
+          pre = before(r, sel),
+          ak = ask(r, sel),
+          o = q(r, sel);
+        let st, c;
+        if (bal <= 0.001) {
+          st = "Done";
+          c = "G";
+        } else if (sel < r.s && cum === r.d) {
+          st = "Upcoming";
+          c = "N";
+        } else if (o == null) {
+          st = "Not logged";
+          c = "N";
+        } else if (o >= ak) {
+          st = "On rate";
+          c = "G";
+        } else if (o >= 0.7 * ak) {
+          st = "Slightly low";
+          c = "A";
+        } else {
+          st = "Below rate";
+          c = "R";
+        }
+        let fc = null;
+        if (bal > 0 && a > 0) {
+          const dn = Math.ceil(bal / a),
+            eta = new Date(dd(sel).getTime() + dn * DAY);
+          fc = { eta, late: Math.round((eta - dd(r.e)) / DAY) };
+        }
+        return { cum, bal, a, ak, o, st, c, fc, pct: cum / r.sc };
+      }
+      function render() {
+        const rows = D[cur].rows,
+          m = rows.map((r) => ({ r, ...info(r) }));
+        const act = m.filter((y) => y.bal > 0.001 && sel >= y.r.s),
+          logged = act.filter((y) => y.o != null),
+          met = act.filter((y) => y.st == "On rate");
+        const mo = m.filter((y) => !y.r.x),
+          A = mo.reduce((s, y) => s + Math.min(1, y.pct), 0) / mo.length,
+          short = act.reduce((s, y) => s + Math.max(0, y.r.mn - y.r.ma), 0),
+          miss = m.filter((y) => y.fc && y.fc.late > 0).length;
+        const kp = (l, v, c) =>
+          `<div class="c"><div class="l">${l}</div><div class="v big" ${c ? `style="color:var(--${c})"` : ""}>${v}</div></div>`;
+        $("k").innerHTML =
+          kp("Overall complete", Math.round(A * 100) + "%", "acc") +
+          kp("Active activities", act.length) +
+          kp("Logged for " + fm(sel), logged.length + " / " + act.length) +
+          kp(
+            "Met asking rate",
+            met.length + " / " + logged.length,
+            met.length >= logged.length * 0.7 ? "ok" : "bad",
+          ) +
+          kp("Workmen shortfall", short, short ? "bad" : "ok") +
+          kp("Forecast to miss target", miss, miss ? "bad" : "ok");
+        $("tabs").innerHTML = Object.keys(D)
+          .map(
+            (k) =>
+              `<button class="${k == cur ? "a" : ""}" onclick="cur='${k}';render()">${D[k].name}</button>`,
+          )
+          .join(" ");
+        const days = Object.keys(LG[cur]).sort().slice(-14);
+        $("ch").innerHTML = days.length
+          ? days
+              .map((k) => {
+                const es = rows.filter((r) => LG[cur][k][r.i] != null),
+                  ok = es.filter((r) => LG[cur][k][r.i] >= ask(r, k)).length,
+                  p = es.length ? Math.round((ok / es.length) * 100) : 0;
+                return `<div title="${ok}/${es.length} met rate"><span>${p}%</span><i style="height:${Math.max(2, p * 0.6)}px"></i><span>${fm(k)}</span></div>`;
+              })
+              .join("")
+          : '<span class="sub">No daily entries yet — enter output in the table below to start the trend.</span>';
+        const cnt = (n) => m.filter((y) => flt(y, n)).length;
+        $("f").innerHTML =
+          FL.map(
+            (n) =>
+              `<button class="sm ${fs == n ? "a" : ""}" onclick="fs='${n}';render()">${n} (${cnt(n)})</button>`,
+          ).join("") +
+          '<span style="flex:1"></span>' +
+          [
+            ["tb", "Table"],
+            ["mx", "Daily matrix"],
+          ]
+            .map(
+              (a) =>
+                `<button class="sm ${view == a[0] ? "a" : ""}" onclick="view='${a[0]}';render()">${a[1]}</button>`,
+            )
+            .join("");
+        $("tb").innerHTML =
+          m
+            .filter((y) => flt(y, fs))
+            .map((y) => {
+              const r = y.r,
+                short = r.mn > r.ma,
+                sf = y.fc
+                  ? y.fc.late > 0
+                    ? `<span class="neg">${fm(iso(y.fc.eta))} (+${y.fc.late}d)</span>`
+                    : `<span class="pos">${fm(iso(y.fc.eta))}</span>`
+                  : "—";
+              return `<tr><td><a class="an" onclick="pick(${r.i})">${r.n}</a><small>${r.g} · target ${fm(r.e)}</small></td><td>${f1(y.cum)} / ${f1(r.sc)} ${r.u}<div class="bar"><i style="width:${Math.min(100, y.pct * 100)}%"></i></div></td>
+  <td>${f1(y.bal)}</td><td><b>${f1(y.ak)}</b> ${r.u}</td><td><input type="number" min="0" step="any" value="${y.o ?? ""}" placeholder="0" onchange="sv(${r.i},this.value)"></td>
+  <td>${y.a == null ? "—" : f1(y.a)}</td><td>${sf}</td><td class="${short ? "neg" : ""}">${r.ma} / ${r.mn}</td><td><span class="s ${y.c}">${y.st}</span></td></tr>`;
+            })
+            .join("") ||
+          '<tr><td colspan="9" class="sub">Nothing in this view.</td></tr>';
+        $("dt").value = sel;
+        $("dt").min = "2026-10-04";
+        $("dt").max = TODAY;
+        const all = Object.values(LG).flatMap((o) => Object.keys(o));
+        $("asof").textContent =
+          "Viewing " +
+          dd(sel).toLocaleDateString("en-GB", {
+            weekday: "long",
+            day: "numeric",
+            month: "long",
+            year: "numeric",
+          }) +
+          (all.length ? " · latest entry " + fm(all.sort().pop()) : "");
+        extra(m);
+      }
+
+      const pf = (r, k) =>
+        Math.max(0, Math.min(1, (dd(k) - dd(r.s)) / (dd(r.e) - dd(r.s))));
+      function days() {
+        const o = [];
+        let t = dd("2026-10-04");
+        const e = dd(TODAY < "2026-10-04" ? "2026-10-04" : TODAY);
+        while (t <= e) {
+          o.push(iso(t));
+          t = new Date(t.getTime() + DAY);
+        }
+        return o.slice(-14);
+      }
+      function span() {
+        const o = [BASE];
+        let t = dd(BASE);
+        const n = Math.max(14, Math.round((dd(TODAY) - t) / DAY));
+        for (let i = 0; i < n; i++) {
+          t = new Date(t.getTime() + DAY);
+          o.push(iso(t));
+        }
+        return o;
+      }
+      function ln(se, labs, lo, hi, W = 560, H = 190) {
+        hi = hi > lo ? hi : lo + 1;
+        const L = 38,
+          B = 22,
+          T = 8,
+          w = W - L - 6,
+          h = H - B - T,
+          bm = se.some((z) => z.b),
+          n = labs.length,
+          X = (i) =>
+            bm ? L + ((i + 0.5) * w) / n : L + (i * w) / Math.max(1, n - 1),
+          Y = (v) => T + h - ((v - lo) / (hi - lo)) * h;
+        let s = `<svg viewBox="0 0 ${W} ${H}" width="100%">`;
+        for (let g = 0; g <= 4; g++) {
+          const v = lo + ((hi - lo) * g) / 4;
+          s += `<line class="gr" x1="${L}" x2="${W - 6}" y1="${Y(v)}" y2="${Y(v)}"/><text x="${L - 4}" y="${Y(v) + 3}" text-anchor="end">${f1(v)}</text>`;
+        }
+        labs.forEach((t, i) => {
+          if (i % Math.ceil(n / 8) == 0)
+            s += `<text x="${X(i)}" y="${H - 6}" text-anchor="middle">${fm(t)}</text>`;
+        });
+        se.forEach((z) => {
+          if (z.b) {
+            z.v.forEach((v, i) => {
+              if (v != null)
+                s += `<rect x="${X(i) - (w / n) * 0.25}" y="${Y(v)}" width="${(w / n) * 0.5}" height="${Math.max(0, Y(lo) - Y(v))}" style="fill:var(${z.c})"/>`;
+            });
+            return;
+          }
+          const p = z.v
+            .map((v, i) => (v == null ? null : [X(i), Y(v)]))
+            .filter(Boolean);
+          s +=
+            `<polyline class="ln" style="stroke:var(${z.c})${z.d ? ";stroke-dasharray:5 4" : ""}" points="${p.map((a) => a.join(",")).join(" ")}"/>` +
+            p
+              .map(
+                (a) =>
+                  `<circle cx="${a[0]}" cy="${a[1]}" r="3" style="fill:var(${z.c})"/>`,
+              )
+              .join("");
+        });
+        return s + "</svg>";
+      }
+      const LEG =
+        '<div class="sub"><span style="color:var(--acc)">■</span> actual &nbsp; <span style="color:var(--bad)">┅</span> plan / asking rate</div>';
+      function cumAt(r, k) {
+        let c = r.d;
+        for (const x in LG[cur])
+          if (x <= k && LG[cur][x][r.i] != null) c += LG[cur][x][r.i];
+        return c;
+      }
+      function trend(rows) {
+        const sp = span(),
+          a = sp.map((k) =>
+            k > TODAY
+              ? null
+              : (rows.reduce((s, r) => s + Math.min(1, cumAt(r, k) / r.sc), 0) /
+                  rows.length) *
+                100,
+          ),
+          p = sp.map(
+            (k) => (rows.reduce((s, r) => s + pf(r, k), 0) / rows.length) * 100,
+          ),
+          vs = [...a, ...p].filter((v) => v != null);
+        return (
+          ln(
+            [
+              { v: p, c: "--bad", d: 1 },
+              { v: a, c: "--acc" },
+            ],
+            sp,
+            Math.floor(Math.min(...vs) - 1),
+            Math.ceil(Math.max(...vs) + 1),
+          ) + LEG
+        );
+      }
+      function det(y) {
+        const r = y.r,
+          ds = days(),
+          sp = span(),
+          out = ds.map((k) => q(r, k) ?? 0),
+          ak = ds.map((k) => ask(r, k)),
+          mx = Math.max(1, ...out, ...ak) * 1.15,
+          cum = sp.map((k) => (k > TODAY ? null : cumAt(r, k))),
+          req = sp.map(
+            (k) =>
+              r.d +
+              (r.sc - r.d) *
+                Math.max(
+                  0,
+                  Math.min(1, (dd(k) - dd(BASE)) / (dd(r.e) - dd(BASE))),
+                ),
+          ),
+          lo = Math.max(0, r.d - (r.sc - r.d) * 0.15),
+          st = (l, v) => `<div><div class="l">${l}</div><b>${v}</b></div>`;
+        return `<div style="display:flex;justify-content:space-between;align-items:center"><div><b style="font-size:17px">${r.n}</b><div class="sub">${D[cur].name} · ${r.g} · ${fm(r.s)} → ${fm(r.e)} · ${r.u}</div></div><button class="sm" onclick="ai=null;render()">Close ✕</button></div>
+ <div class="k" style="margin:10px 0">${st("Complete", Math.round(y.pct * 100) + "%") + st("Balance", f1(y.bal) + " " + r.u) + st("Asking / day", f1(y.ak)) + st("7-day avg", y.a == null ? "—" : f1(y.a)) + st("Workmen", r.ma + " / " + r.mn)}</div>
+ <div class="two"><div><div class="l">Daily output vs asking rate (${r.u}/day)</div>${ln(
+   [
+     { v: out, c: "--acc", b: 1 },
+     { v: ak, c: "--bad", d: 1 },
+   ],
+   ds,
+   0,
+   mx,
+ )}</div><div><div class="l">Cumulative actual vs required path (${r.u})</div>${ln(
+   [
+     { v: req, c: "--bad", d: 1 },
+     { v: cum, c: "--acc" },
+   ],
+   sp,
+   lo,
+   r.sc,
+ )}</div></div>${LEG}`;
+      }
+      function hmx(m) {
+        const ds = days();
+        return (
+          '<table class="hm"><thead><tr><th></th>' +
+          ds
+            .map((k) => `<th>${dd(k).getDate()}/${dd(k).getMonth() + 1}</th>`)
+            .join("") +
+          "</tr></thead><tbody>" +
+          m
+            .map(
+              (y) =>
+                `<tr><td style="white-space:nowrap;padding-right:10px"><a class="an" onclick="pick(${y.r.i})">${y.r.n}</a> <span class="sub">${y.r.u}</span></td>` +
+                ds
+                  .map((k) => {
+                    const o = q(y.r, k),
+                      a = ask(y.r, k);
+                    return o == null
+                      ? '<td class="x n" title="not logged"></td>'
+                      : `<td class="x ${o >= a ? "G" : o >= 0.7 * a ? "A" : "R"}" title="${f1(o)} vs asking ${f1(a)}">${f1(o)}</td>`;
+                  })
+                  .join("") +
+                "</tr>",
+            )
+            .join("") +
+          "</tbody></table>"
+        );
+      }
+      function pick(i) {
+        ai = i;
+        render();
+        $("dp").scrollIntoView({ behavior: "smooth" });
+      }
+      function extra(m) {
+        const rows = D[cur].rows;
+        $("tc").style.display = view == "tb" ? "" : "none";
+        $("mx").style.display = view == "mx" ? "" : "none";
+        $("tr").innerHTML = trend(rows.filter((r) => !r.x));
+        const gs = [...new Set(rows.filter((r) => !r.x).map((r) => r.g))];
+        $("gp").innerHTML = gs
+          .map((g) => {
+            const x = m.filter((y) => y.r.g == g && !y.r.x),
+              a =
+                (x.reduce((s, y) => s + Math.min(1, y.pct), 0) / x.length) *
+                100,
+              p = (x.reduce((s, y) => s + pf(y.r, sel), 0) / x.length) * 100;
+            return `<div class="gb"><div><span>${g}</span><span>${Math.round(a)}% <span class="sub">(plan ${Math.round(p)}%)</span></span></div><div class="bar" style="width:100%"><i style="width:${a}%"></i><b style="left:${p}%"></b></div></div>`;
+          })
+          .join("");
+        const at = m
+          .filter((y) => y.bal > 0.001 && sel >= y.r.s)
+          .map((y) => ({
+            y,
+            s:
+              (y.fc && y.fc.late > 0 ? y.fc.late : 0) +
+              (y.st == "Below rate" ? 5 : 0) +
+              (y.r.mn > y.r.ma ? 2 : 0),
+          }))
+          .filter((z) => z.s > 0)
+          .sort((a, b) => b.s - a.s)
+          .slice(0, 5);
+        $("gp").innerHTML +=
+          '<div class="l" style="margin-top:12px">Needs attention</div>' +
+          (at.length
+            ? at
+                .map(
+                  (z) =>
+                    `<div style="font-size:12px;margin-top:4px"><a class="an" onclick="pick(${z.y.r.i})">${z.y.r.n}</a> — ${[z.y.st == "Below rate" ? "below asking rate" : "", z.y.fc && z.y.fc.late > 0 ? "forecast +" + z.y.fc.late + "d late" : "", z.y.r.mn > z.y.r.ma ? "short " + (z.y.r.mn - z.y.r.ma) + " workmen" : ""].filter(Boolean).join(", ")}</div>`,
+                )
+                .join("")
+            : '<div class="sub">Nothing flagged.</div>');
+        $("mxb").innerHTML = hmx(m.filter((y) => flt(y, fs)));
+        const y = m.find((z) => z.r.i == ai);
+        $("dp").style.display = y ? "" : "none";
+        if (y) $("dp").innerHTML = det(y);
+      }
+      function flt(y, n) {
+        return (
+          n == "All" ||
+          (n == "Active" && y.bal > 0.001 && sel >= y.r.s) ||
+          (n == "Below rate" &&
+            (y.st == "Below rate" || y.st == "Slightly low")) ||
+          (n == "Upcoming" && y.st == "Upcoming") ||
+          (n == "Done" && y.bal <= 0.001)
+        );
+      }
+      function sd(v) {
+        if (v && v >= "2026-10-04" && v <= TODAY) {
+          sel = v;
+          render();
+        }
+      }
+      function mv(n) {
+        sd(iso(dd(sel).getTime() + n * DAY));
+      }
+      function sv(i, v) {
+        const b = cur,
+          L = LG[b];
+        L[sel] = L[sel] || {};
+        if (v === "" || isNaN(v)) delete L[sel][i];
+        else L[sel][i] = Math.max(0, parseFloat(v));
+        if (!Object.keys(L[sel]).length) delete L[sel];
+        try {
+          localStorage.setItem("dailyProgressLG", JSON.stringify(LG));
+          toast("Saved on this device");
+        } catch (e) {
+          toast("Saved for this session");
+        }
+        render();
+      }
+      function normalizeActivity(value) {
+        return String(value ?? "").toLowerCase().normalize("NFKD")
+          .replace(/[–—]/g, "-").replace(/\s+/g, " ").trim()
+          .replace(/^\s*[a-d]\)\s*/, "");
+      }
+      function excelDate(value) {
+        if (value == null || value === "") return null;
+        let d;
+        if (value instanceof Date) d = value;
+        else if (typeof value === "number") {
+          const p = XLSX.SSF.parse_date_code(value);
+          return p ? `${p.y}-${String(p.m).padStart(2,"0")}-${String(p.d).padStart(2,"0")}` : null;
+        }
+        else {
+          const text = String(value).trim();
+          let m = text.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{2,4})$/);
+          if (m) { let y=Number(m[3]); if(y<100)y+=2000; d=new Date(y,Number(m[2])-1,Number(m[1])); }
+          else d = new Date(text);
+        }
+        if (!d || Number.isNaN(d.getTime())) return null;
+        return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+      }
+      async function loadBook1() {
+        const button = $("refreshBtn"), status = $("bookStatus");
+        button.disabled = true;
+        status.textContent = "Loading Book1.xlsx…";
+        try {
+          if (typeof XLSX === "undefined") throw new Error("Excel reader did not load. Check your internet connection.");
+          const response = await fetch("./Book1.xlsx?ts=" + Date.now(), { cache: "no-store" });
+          if (!response.ok) throw new Error("Could not load Book1.xlsx. Ensure it is in the same repository folder as index.html.");
+          const workbook = XLSX.read(await response.arrayBuffer(), { type: "array" });
+          const sourceRows = {};
+          for (const [key, sheetName] of [["opd", "OPD BACKUP"], ["emr", "EMR BACKUP"]]) {
+            const sheet = workbook.Sheets[sheetName];
+            if (!sheet) throw new Error(`Missing worksheet: ${sheetName}`);
+            const matrix = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: null, raw: true });
+            const headerRow = matrix.findIndex(row => row.some(cell => normalizeActivity(cell) === "activity"));
+            if (headerRow < 0) throw new Error(`Could not find ACTIVITY header in ${sheetName}`);
+            const headers = matrix[headerRow].map(normalizeActivity);
+            const column = (...names) => headers.findIndex(h => names.includes(h));
+            const ci = column("activity", "name"), cs = column("plan / actual start", "start", "start date"),
+              ce = column("target date", "end", "finish date"), cu = column("uom", "unit"),
+              cscope = column("scope", "target"), cd = column("achieved as on 3rd oct", "achieved as on 3-oct", "achieved as on 3-october"),
+              cdone = cd >= 0 ? cd : column("achieved", "done", "progress"),
+              cmn = column("no. of workmen needed", "manpower needed"),
+              cma = column("no. of workmen available", "manpower available");
+            const man = (v) => { if (v == null || String(v).trim() === "") return null; if (String(v).trim() === "-") return 0; const n = Number(v); return Number.isFinite(n) && n >= 0 ? n : null; };
+            const records = [];
+            for (const row of matrix.slice(headerRow + 1)) {
+              const name = ci >= 0 ? String(row[ci] ?? "").trim() : "";
+              if (!name) continue;
+              const scope = cscope >= 0 ? Number(row[cscope]) : NaN;
+              const achieved = cdone >= 0 ? row[cdone] : null;
+              const aTxt = String(achieved ?? "").trim();
+              const fraction = typeof achieved === "number" ? achieved : aTxt === "" ? NaN : Number(aTxt.replace(/%$/, "")) / (aTxt.includes("%") ? 100 : 1);
+              records.push({ name, key: normalizeActivity(name), start: cs >= 0 ? excelDate(row[cs]) : null,
+                end: ce >= 0 ? excelDate(row[ce]) : null, unit: cu >= 0 ? row[cu] : null,
+                scope: Number.isFinite(scope) && scope > 0 ? scope : null,
+                fraction: Number.isFinite(fraction) && fraction >= 0 && fraction <= 1 ? fraction : null,
+                mn: cmn >= 0 ? man(row[cmn]) : null, ma: cma >= 0 ? man(row[cma]) : null });
+            }
+            sourceRows[key] = records;
+          }
+          // Dashboard name -> [sheet name, occurrence] for rows the sheet names differently / repeats.
+          const ALIAS = {
+            opd: {
+              "Lift \u2013 2 No.s": ["2 No.s", 0], "Lift \u2013 3 No.s": ["3 No.s", 0],
+              "Lift \u2013 1 No.": ["1 No.", 0], "Lift \u2013 1 No. (2)": ["1 No.", 1],
+              "False Ceiling \u2013 Ground Floor": ["Ground Floor", 0], "False Ceiling \u2013 First Floor": ["First Floor", 0],
+              "False Ceiling \u2013 Second Floor": ["Second Floor", 0], "False Ceiling \u2013 Third Floor": ["Third Floor", 0],
+            },
+            emr: {
+              "Ground Floor ( 2 Nos.) \u2013 Civil Work": ["Civil Work", 0], "Ground Floor ( 2 Nos.) \u2013 OT Works": ["OT Works", 0],
+              "Lift \u2013 2nd Floor (2 Nos.) \u2013 Civil Work": ["Civil Work", 1], "Lift \u2013 2nd Floor (2 Nos.) \u2013 OT Works": ["OT Works", 1],
+              "Lift \u2013 3rd Floor (12 Nos.) \u2013 Civil Work": ["Civil Work", 2], "Lift \u2013 3rd Floor (12 Nos.) \u2013 OT Works": ["OT Works", 2],
+              "CSSD Room \u2013 Civil Work": ["Civil Work", 3], "CSSD Room \u2013 Service Oriented Work": ["Service Oriented Work", 0],
+              "Lift \u2013 2 Nos.": ["2 Nos.", 0], "Lift \u2013 1 Nos.": ["1 Nos.", 0],
+              "Lift \u2013 2 Nos. (2)": ["2 Nos.", 1], "Lift \u2013 2 Nos. (3)": ["2 Nos.", 2], "Lift \u2013 2 Nos. (4)": ["2 Nos.", 3],
+              "Lift \u2013 2 Nos. (Dumb waiter)": ["2 Nos. (Dumb waiter)", 0],
+              "Lift lobby": ["Lift lobby", 0], "Over Head Tank": ["Over Head Tank", 0],
+            },
+          };
+          for (const key of ["opd", "emr"]) {
+            const available = sourceRows[key].slice();
+            const used = new Set();
+            const alias = {};
+            for (const n in ALIAS[key]) alias[normalizeActivity(n)] = [normalizeActivity(ALIAS[key][n][0]), ALIAS[key][n][1]];
+            for (const activity of D[key].rows) {
+              const canonical = normalizeActivity(activity.n);
+              let matchIndex = -1;
+              if (alias[canonical]) {
+                const [k, o] = alias[canonical];
+                const hits = available.map((r, i) => i).filter((i) => available[i].key === k);
+                if (hits[o] != null) matchIndex = hits[o];
+              } else {
+                // “(2)” identifies a later occurrence of the same named activity.
+                const duplicate = canonical.match(/^(.*) \((\d+)\)$/);
+                const k = duplicate ? duplicate[1] : canonical;
+                const hits = available.map((r, i) => i).filter((i) => available[i].key === k && !used.has(i));
+                if (hits.length) matchIndex = hits[Math.min(duplicate ? Number(duplicate[2]) - 1 : 0, hits.length - 1)];
+              }
+              if (matchIndex < 0) { console.warn("No sheet row for", key, activity.n); continue; }
+              used.add(matchIndex);
+              const source = available[matchIndex];
+              if (source.scope != null) activity.sc = source.scope;
+              if (source.fraction != null && activity.sc > 0) activity.d = activity.sc * source.fraction;
+              if (source.start) activity.s = source.start;
+              if (source.end) activity.e = source.end;
+              if (source.mn != null) activity.mn = source.mn;
+              if (source.ma != null) activity.ma = source.ma;
+            }
+          }
+          try { const saved = localStorage.getItem("dailyProgressLG"); if (saved) Object.assign(LG, JSON.parse(saved)); } catch (e) {}
+          $("live").classList.add("on");
+          $("lt").textContent = "Book1.xlsx loaded";
+          status.textContent = `${D.opd.rows.length} OPD + ${D.emr.rows.length} EMR activities`;
+          render();
+        } catch (error) {
+          status.textContent = "Excel load failed";
+          toast(error.message || "Could not load Book1.xlsx");
+          console.error(error);
+        } finally { button.disabled = false; }
+      }
+      loadBook1();
+    </script>
+  </body>
+</html>
